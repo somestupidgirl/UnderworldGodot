@@ -306,24 +306,11 @@ public partial class MusicStreamPlayer : Node
 				typeof(Mt32EmuSynth).Assembly,
 				(name, assembly, path) =>
 				{
-					var root = AppContext.BaseDirectory;
-					string runtime = RuntimeInformation.RuntimeIdentifier;
+					string? resolvedPath = NativeAssetResolver.ResolveLibraryPath(name, AppContext.BaseDirectory);
+					if (string.IsNullOrWhiteSpace(resolvedPath))
+						return IntPtr.Zero;
 
-					string filename;
-					if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-						filename = Path.GetExtension(name).Equals(".dll", StringComparison.OrdinalIgnoreCase)
-							? name : name + ".dll";
-					else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-						filename = Path.GetExtension(name).Equals(".dylib", StringComparison.OrdinalIgnoreCase)
-							? name : name + ".dylib";
-					else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-						filename = Path.GetExtension(name).Equals(".so", StringComparison.OrdinalIgnoreCase)
-							? name : name + ".so";
-					else
-						throw new PlatformNotSupportedException();
-
-					var fullPath = Path.Combine(root, "runtimes", runtime, "native", filename);
-					return File.Exists(fullPath) ? NativeLibrary.Load(fullPath) : IntPtr.Zero;
+					return NativeLibrary.Load(resolvedPath);
 				});
 		}
 	}

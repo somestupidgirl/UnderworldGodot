@@ -8,11 +8,15 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="Underworld"
 run/main_scene="res://scenes/Launch.tscn"
-config/features=PackedStringArray("4.3", "C#", "Forward Plus")
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://resources/icon/dragon.png"
 
 [display]
@@ -32,5 +36,7 @@ export/convert_text_resources_to_binary=false
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
-environment/defaults/default_clear_color=Color(0, 0, 0, 1)
+textures/vram_compression/import_s3tc_bptc=true
+textures/vram_compression/import_etc2_astc=true
 viewport/hdr_2d=true
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)

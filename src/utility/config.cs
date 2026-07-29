@@ -26,6 +26,8 @@ public class uwsettings
 
     public static void LoadSettings()
     {
+        string defaultPathUW1 = DiscoverGameDataPath("UW1");
+        string defaultPathUW2 = DiscoverGameDataPath("UW2");
 
         if (File.Exists(FilePath))
         {
@@ -38,6 +40,18 @@ public class uwsettings
             Debug.Print($"No existing settings at {FilePath}. Loading defaults.");
             instance = new();
         }
+
+        instance.pathuw1 = IsUsableGamePath(instance.pathuw1)
+            ? Path.GetFullPath(instance.pathuw1)
+            : defaultPathUW1;
+        instance.pathuw2 = IsUsableGamePath(instance.pathuw2)
+            ? Path.GetFullPath(instance.pathuw2)
+            : defaultPathUW2;
+
+        if (string.IsNullOrWhiteSpace(instance.pathuw1))
+            instance.pathuw1 = defaultPathUW1;
+        if (string.IsNullOrWhiteSpace(instance.pathuw2))
+            instance.pathuw2 = defaultPathUW2;
 
         if (main.cameraPitchGimbal_world != null)
         {
@@ -75,8 +89,8 @@ public class uwsettings
 
     }
 
-    public string pathuw1 { get; set; } = @"C:\Games\UW";
-    public string pathuw2 { get; set; } = @"C:\Games\UW2";
+    public string pathuw1 { get; set; } = string.Empty;
+    public string pathuw2 { get; set; } = string.Empty;
     public string gametoload { get; set; } = "UW1";
     public int level { get; set; } = 0;
     public float FOV { get; set; } = 75;
@@ -87,6 +101,86 @@ public class uwsettings
     // Legacy field, still read for backward compatibility. If set and synthpath is empty,
     // synthpath is populated from this in LoadSettings.
     public string rompath { get; set; } = "";
+
+    private static bool IsUsableGamePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            if (!Directory.Exists(fullPath))
+                return false;
+
+            return Directory.Exists(Path.Combine(fullPath, "DATA"))
+                || Directory.Exists(Path.Combine(fullPath, "SOUND"))
+                || Directory.Exists(Path.Combine(fullPath, "CRIT"));
+        }
+        catch (Exception ex)
+        {
+            Debug.Print($"Could not validate game path '{path}': {ex.Message}");
+            return false;
+        }
+    }
+
+    private static string DiscoverGameDataPath(string gameFolder)
+    {
+        string[] candidateRoots =
+        [
+            ProjectSettings.GlobalizePath("res://"),
+            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "Resources")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "Resources")),
+        ];
+
+        foreach (string root in candidateRoots)
+        {
+            if (TryResolveGameDataPath(root, gameFolder, out string resolvedPath))
+                return resolvedPath;
+        }
+
+        foreach (string root in candidateRoots)
+        {
+            string? current = Path.GetFullPath(root);
+            while (!string.IsNullOrEmpty(current))
+            {
+                if (TryResolveGameDataPath(current, gameFolder, out string resolvedPath))
+                    return resolvedPath;
+
+                string? parent = Directory.GetParent(current)?.FullName;
+                if (string.IsNullOrEmpty(parent) || string.Equals(current, parent, StringComparison.OrdinalIgnoreCase))
+                    break;
+                current = parent;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static bool TryResolveGameDataPath(string root, string gameFolder, out string resolvedPath)
+    {
+        resolvedPath = string.Empty;
+        if (string.IsNullOrWhiteSpace(root))
+            return false;
+
+        string candidate = Path.Combine(root, "UWDATA", gameFolder);
+        if (Directory.Exists(candidate))
+        {
+            resolvedPath = Path.GetFullPath(candidate);
+            return true;
+        }
+
+        candidate = Path.Combine(root, gameFolder);
+        if (Directory.Exists(candidate))
+        {
+            resolvedPath = Path.GetFullPath(candidate);
+            return true;
+        }
+
+        return false;
+    }
 
     public void Save()
     {
