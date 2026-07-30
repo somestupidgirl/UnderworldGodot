@@ -437,3 +437,11 @@ tests/Underworld.Sfx.Tests/fixtures/uw1/*.MT
 # of the shipping game; kept outside the repo to reduce PR noise.
 tools/
 Underworld.csproj.lscache
+
+# macOS junk
+*.DS_Store
+Builds/*
+
+# Game data
+UWDATA/*
+
